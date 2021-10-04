@@ -23,6 +23,7 @@ from language.xsp.data_preprocessing.sql_utils import preprocess_sql
 
 import sqlparse
 import tensorflow.compat.v1.gfile as gfile
+import pdb
 
 WRONG_TRAINING_EXAMPLES = {
     # In this query the SQL query mentions a ref_company_types table that is not
@@ -87,7 +88,8 @@ def convert_spider(spider_example,
                    anonymize_values,
                    abstract_sql=False,
                    table_schemas=None,
-                   allow_value_generation=False):
+                   allow_value_generation=False,
+                   tokenizer_name=None):
   """Converts a Spider example to the standard format.
 
   Args:
@@ -110,11 +112,11 @@ def convert_spider(spider_example,
   sql_query = sqlparse.parse(preprocess_sql(sql_query.lower()))[0]
 
   example = NLToSQLExample()
-
+ 
   # Set the input
   populate_utterance(example, ' '.join(spider_example['question_toks']), schema,
-                     wordpiece_tokenizer)
-
+                     wordpiece_tokenizer, tokenizer_name)
+  
   # Set the output
   successful_copy = True
   if generate_sql:

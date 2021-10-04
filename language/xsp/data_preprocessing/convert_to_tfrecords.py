@@ -52,6 +52,10 @@ flags.DEFINE_bool('permute', False, 'Whether to permute the train schemas.')
 flags.DEFINE_bool('generate_output', False,
                   'Whether to generate output sequences.')
 
+flags.DEFINE_string('pt_embedding', None, 'pretrained embedding model')
+
+flags.DEFINE_string('tokenizer_name', None, 'provide only if it is not Bert')
+
 flags.DEFINE_integer(
     'num_spider_repeats', 7,
     'The number of times to permute the Spider data tables (for train only).')

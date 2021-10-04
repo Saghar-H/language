@@ -17,7 +17,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+import pdb
 
 class Wordpiece(object):
   """Contains wordpiece information as a substring of an utterance."""
@@ -53,7 +53,7 @@ class Wordpiece(object):
     return self
 
 
-def get_wordpieces(sequence, tokenizer, schema_entities=None):
+def get_wordpieces(sequence, tokenizer, schema_entities=None, tokenizer_name=None):
   """Sets the wordpieces for a NLToSQLExample."""
   # First, it finds exact-string alignment between schema entities and the
   # utterance.
@@ -67,17 +67,34 @@ def get_wordpieces(sequence, tokenizer, schema_entities=None):
 
         for i in range(start_idx, start_idx + len(schema_entity)):
           aligned_chars[i] = True
-
   # Get the spans for the wordpieces
-  wordpieces = tokenizer.tokenize(sequence)
-
+  #pdb.set_trace()
+  if tokenizer_name=='bert':
+    wordpieces = tokenizer.tokenize(sequence)
+  if tokenizer_name =='xlmr':
+      wordpieces = tokenizer.tokenize(sequence.lower())
+      for i, wordpiece in enumerate(wordpieces):
+        if wordpiece.startswith(u"\u2581"):
+            wordpieces[i] = wordpiece[len(u"\u2581"):]
+        else:
+            wordpieces[i] = "##"+wordpiece
   original_seq_index = 0
   wordpieces_with_spans = list()
   for i, wordpiece in enumerate(wordpieces):
     search_wordpiece = wordpiece
     if wordpiece.startswith('#'):
-      search_wordpiece = wordpiece[2:]
-
+        search_wordpiece = wordpiece[2:]
+    #if tokenizer_name =='bert':
+    #    if wordpiece.startswith('#'):
+    #      search_wordpiece = wordpiece[2:]
+    #elif tokenizer_name =='xlmr':
+    #    if wordpiece.startswith(u"\u2581"):
+    #        search_wordpiece = wordpiece[len(u"\u2581"):]
+    #    search_wordpiece = search_wordpiece.lower()
+    #elif tokenizer_name =='xlm':
+    #    if wordpiece.endswith('</w>'):
+    #      search_wordpiece = wordpiece[0:-4]
+    #    search_wordpiece = search_wordpiece.lower()
     # It will be a substring of the lowered original sequence.
     found = True
     while (sequence.lower()[original_seq_index:original_seq_index +

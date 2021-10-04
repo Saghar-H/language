@@ -34,7 +34,8 @@ from language.xsp.data_preprocessing.spider_preprocessing import load_spider_exa
 from language.xsp.data_preprocessing.spider_preprocessing import load_spider_tables
 from language.xsp.data_preprocessing.wikisql_preprocessing import convert_wikisql
 from language.xsp.data_preprocessing.wikisql_preprocessing import load_wikisql_tables
-
+from transformers import XLMTokenizer, XLMRobertaTokenizer
+import transformers 
 import tensorflow.compat.v1.gfile as gfile
 
 FLAGS = flags.FLAGS
@@ -49,8 +50,12 @@ flags.DEFINE_list('splits', None, 'The splits to create examples for.')
 
 flags.DEFINE_string('output_filepath', None, 'File to output examples to.')
 
+flags.DEFINE_string('pt_embedding', None, 'pretrained embedding model')
+
 flags.DEFINE_string('tokenizer_vocabulary', '',
                     'Filepath to the tokenizer vocabulary.')
+
+flags.DEFINE_string('tokenizer_name', None, 'provide only if it is not Bert')
 
 flags.DEFINE_bool('generate_sql', False,
                   'Whether to provide SQL labels in the proto.')
@@ -87,7 +92,6 @@ def process_spider(output_file, debugging_file, tokenizer):
   spider_examples = \
     load_spider_examples(os.path.join(FLAGS.input_filepath,
                                       split + '.json'))
-
   num_examples_created = 0
   num_examples_failed = 0
 
@@ -110,7 +114,8 @@ def process_spider(output_file, debugging_file, tokenizer):
           FLAGS.anonymize_values,
           abstract_sql=FLAGS.abstract_sql,
           table_schemas=spider_table_schemas_map[example_db],
-          allow_value_generation=FLAGS.allow_value_generation)
+          allow_value_generation=FLAGS.allow_value_generation,
+          tokenizer_name= FLAGS.tokenizer_name)
     except abstract_sql.UnsupportedSqlError as e:
       print(e)
       example = None
@@ -157,7 +162,8 @@ def process_wikisql(output_file, debugging_file, tokenizer):
                       FLAGS.anonymize_values,
                       FLAGS.abstract_sql,
                       tables_schema=wikisql_table_schemas_map[input_example[2]],
-                      allow_value_generation=FLAGS.allow_value_generation)
+                      allow_value_generation=FLAGS.allow_value_generation,
+                      tokenizer_name = FLAGS.tokenizer_name)
     if example:
       output_file.write(json.dumps(example.to_json()) + '\n')
       num_examples_created += 1
@@ -208,7 +214,11 @@ def process_michigan_datasets(output_file, debugging_file, tokenizer):
 
 
 def main(unused_argv):
-  tokenizer = FullTokenizer(FLAGS.tokenizer_vocabulary)
+  if FLAGS.tokenizer_name=='bert':
+    tokenizer = FullTokenizer(FLAGS.tokenizer_vocabulary)
+  else:
+    tokenizer = transformers.AutoTokenizer.from_pretrained(FLAGS.pt_embedding) #'xlm-mlm-en-2048'
+    tokenizer.save_vocabulary(FLAGS.tokenizer_vocabulary)
 
   print('Loading ' + str(FLAGS.dataset_name) + ' dataset from ' +
         FLAGS.input_filepath)

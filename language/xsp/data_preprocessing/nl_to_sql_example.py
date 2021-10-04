@@ -25,6 +25,7 @@ from language.xsp.data_preprocessing.schema_utils import get_schema_entities
 from language.xsp.data_preprocessing.schema_utils import process_tables
 from language.xsp.data_preprocessing.sql_utils import SQLQuery
 
+import pdb
 
 class NLToSQLInput(object):
   """Contains information about the input to a NL to SQL model."""
@@ -95,21 +96,20 @@ class NLToSQLExample(object):
     return ' '.join(gold_query)
 
 
-def populate_utterance(example, utterance, schema, tokenizer):
+def populate_utterance(example, utterance, schema, tokenizer, tokenizer_name=None):
   """Sets the model input for a NLToSQLExample."""
   example.model_input.original_utterance = utterance
 
   schema_entities = get_schema_entities(schema)
-
   # Set the utterance wordpieces
   try:
     wordpieces, aligned_schema_entities = get_wordpieces(
-        example.model_input.original_utterance, tokenizer, schema_entities)
+        example.model_input.original_utterance, tokenizer, schema_entities, tokenizer_name=tokenizer_name)
     example.model_input.utterance_wordpieces.extend(wordpieces)
 
     # Set the table information
     example.model_input.tables.extend(
-        process_tables(schema, tokenizer, aligned_schema_entities))
+        process_tables(schema, tokenizer, aligned_schema_entities, tokenizer_name))
   except UnicodeDecodeError as e:
     print(unicode(e))
     return None

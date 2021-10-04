@@ -136,7 +136,7 @@ def column_is_foreign_key(column):
   return foreign_key
 
 
-def process_columns(columns, tokenizer, table_name, aligned_schema_entities):
+def process_columns(columns, tokenizer, table_name, aligned_schema_entities, tokenizer_name=None):
   """Processes a column in a table to a TableColumn object."""
   column_obj_list = list()
   for column in columns:
@@ -144,7 +144,7 @@ def process_columns(columns, tokenizer, table_name, aligned_schema_entities):
     column_obj.original_column_name = column['field name']
     column_obj.column_name_wordpieces.extend(
         get_wordpieces(
-            column_obj.original_column_name.replace('_', ' '), tokenizer)[0])
+            column_obj.original_column_name.replace('_', ' '), tokenizer, tokenizer_name=tokenizer_name)[0])
     col_type = column['type'].lower()
     if 'int' in col_type or 'float' in col_type or 'double' in col_type or 'decimal' in col_type:
       col_type = 'number'
@@ -161,7 +161,7 @@ def process_columns(columns, tokenizer, table_name, aligned_schema_entities):
   return column_obj_list
 
 
-def process_table(table_name, columns, tokenizer, aligned_schema_entities):
+def process_table(table_name, columns, tokenizer, aligned_schema_entities, tokenizer_name=None):
   """Processes a schema table into a DatabaseTable object."""
   table_obj = DatabaseTable()
   table_obj.original_table_name = table_name
@@ -171,19 +171,19 @@ def process_table(table_name, columns, tokenizer, aligned_schema_entities):
 
   # Name wordpieces. Remove underscores then tokenize.
   table_obj.table_name_wordpieces.extend(
-      get_wordpieces(table_name.replace('_', ' '), tokenizer)[0])
+      get_wordpieces(table_name.replace('_', ' '), tokenizer, tokenizer_name=tokenizer_name)[0])
 
   table_obj.table_columns.extend(
       process_columns(columns, tokenizer, table_obj.original_table_name,
-                      aligned_schema_entities))
+                      aligned_schema_entities, tokenizer_name=tokenizer_name))
 
   return table_obj
 
 
-def process_tables(schema, tokenizer, aligned_schema_entities):
+def process_tables(schema, tokenizer, aligned_schema_entities, tokenizer_name=None):
   """Processes each table in a schema."""
   return [
-      process_table(table_name, columns, tokenizer, aligned_schema_entities)
+      process_table(table_name, columns, tokenizer, aligned_schema_entities, tokenizer_name)
       for table_name, columns in schema.items()
   ]
 

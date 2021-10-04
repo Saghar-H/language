@@ -25,6 +25,7 @@ from language.xsp.data_preprocessing.sql_parsing import VALID_GENERATED_TOKENS
 from language.xsp.data_preprocessing.sql_utils import SchemaEntityCopy
 from language.xsp.data_preprocessing.sql_utils import SQLAction
 
+import pdb
 
 class ParseError(Exception):
   pass

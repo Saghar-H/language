@@ -59,13 +59,14 @@ def convert_wikisql(input_example,
                     anonymize_values,
                     use_abstract_sql,
                     tables_schema=None,
-                    allow_value_generation=False):
+                    allow_value_generation=False,
+                    tokenizer_name= None):
   """Converts a WikiSQL example into a NLToSQLExample."""
   example = NLToSQLExample()
 
   try:
     try:
-      example = populate_utterance(example, input_example[0], schema, tokenizer)
+      example = populate_utterance(example, input_example[0], schema, tokenizer, tokenizer_name=tokenizer_name)
     except ValueError as e:
       print(e)
       return None

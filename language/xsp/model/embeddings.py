@@ -14,12 +14,15 @@
 # limitations under the License.
 """Utilities for generating input embeddings and output embedding table."""
 import math
+import pdb
 
 from language.xsp.model import bert_utils
 from language.xsp.model import common_layers
 from language.xsp.model import constants
 import tensorflow.compat.v1 as tf
 import tensorflow.compat.v1.gfile as gfile
+from transformers import *
+from transformers import XLMTokenizer, TFXLMModel
 
 # Added to avoid division by zero.
 EPSILON = 0.00000001
@@ -59,6 +62,42 @@ def _ignore_pad(embeddings_table, ids, use_one_hot_embeddings=False):
   embedded_weights = tf.expand_dims(embedded_weights, -1)
   return source_embeddings * embedded_weights
 
+def _xlm_embeddings(wordpiece_embedding_size, bert_config, features,
+                     is_training, use_one_hot_embeddings, scope,
+                     use_segment_ids):
+  """Get embeddings from XLM."""
+  token_type_ids = None
+  if use_segment_ids:
+    token_type_ids = features[constants.SEGMENT_ID_KEY]
+
+  max_seq_len = tf.shape(features[constants.SOURCE_WORDPIECES_KEY])[1]
+  input_mask = bert_utils.get_input_mask(max_seq_len,
+                                         features[constants.SOURCE_LEN_KEY])
+  input_ids = features[constants.SOURCE_WORDPIECES_KEY]
+  tokenizer = XLMTokenizer.from_pretrained('xlm-mlm-en-2048')
+  model = TFXLMModel.from_pretrained('xlm-mlm-en-2048')
+
+  inputs = tokenizer("Hello, my dog is cute", return_tensors="tf")
+  outputs = model(inputs)
+
+  source_embeddings = outputs.last_hidden_state
+  source_embeddings = bert_utils.get_bert_embeddings(
+      input_ids,
+      bert_config,
+      input_mask,
+      token_type_ids=token_type_ids,
+      is_training=is_training,
+      use_one_hot_embeddings=use_one_hot_embeddings,
+      scope=scope)
+  source_embeddings = common_layers.linear_transform(source_embeddings,
+                                                     wordpiece_embedding_size,
+                                                     "bert_transform")
+
+  # Set weights to ignore padding.
+  embedded_weights = tf.to_float(
+      tf.not_equal(input_ids, constants.PAD_SYMBOL_ID))
+  embedded_weights = tf.expand_dims(embedded_weights, -1)
+  return source_embeddings * embedded_weights
 
 def _bert_embeddings(wordpiece_embedding_size, bert_config, features,
                      is_training, use_one_hot_embeddings, scope,
@@ -94,6 +133,7 @@ def _bert_embeddings(wordpiece_embedding_size, bert_config, features,
 def get_input_embeddings(model_config, bert_config, features, is_training,
                          use_one_hot_embeddings):
   """Returns tensor representing inputs for the given batch."""
+  pdb.set_trace()
   with tf.variable_scope("bert") as scope:
     wordpiece_embeddings = _bert_embeddings(
         model_config.model_parameters.source_embedding_dims, bert_config,
