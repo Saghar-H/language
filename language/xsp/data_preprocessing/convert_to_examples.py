@@ -37,6 +37,7 @@ from language.xsp.data_preprocessing.wikisql_preprocessing import load_wikisql_t
 from transformers import XLMTokenizer, XLMRobertaTokenizer
 import transformers 
 import tensorflow.compat.v1.gfile as gfile
+import pdb
 
 FLAGS = flags.FLAGS
 
@@ -214,11 +215,18 @@ def process_michigan_datasets(output_file, debugging_file, tokenizer):
 
 
 def main(unused_argv):
+  additional_special_tokens = ['[TAB]', '[STR_COL]', '[NUM_COL]', '[OTH_COL]', '[TIME_COL]', '[BOOL_COL]']
   if FLAGS.tokenizer_name=='bert':
     tokenizer = FullTokenizer(FLAGS.tokenizer_vocabulary)
   else:
     tokenizer = transformers.AutoTokenizer.from_pretrained(FLAGS.pt_embedding) #'xlm-mlm-en-2048'
-    tokenizer.save_vocabulary(FLAGS.tokenizer_vocabulary)
+    
+    tokenizer._add_tokens(additional_special_tokens, special_tokens=True)
+    vocab = tokenizer.get_vocab() #Dict[str, int]
+    vocab_words = [x[0] for x in sorted(vocab.items(), key=lambda item: item[1])]
+    with open(FLAGS.tokenizer_vocabulary,"w") as vocab_file:
+        vocab_file.write('\n'.join(vocab_words))
+    
 
   print('Loading ' + str(FLAGS.dataset_name) + ' dataset from ' +
         FLAGS.input_filepath)
@@ -226,8 +234,7 @@ def main(unused_argv):
   # The debugging file saves all of the processed SQL queries.
   debugging_file = gfile.Open(
       os.path.join('/'.join(FLAGS.output_filepath.split('/')[:-1]),
-                   FLAGS.dataset_name + '_'.join(FLAGS.splits) + '_gold.txt'),
-      'w')
+                   FLAGS.dataset_name + '_'.join(FLAGS.splits) + '_gold.txt'), 'w')
 
   # The output file will save a sequence of string-serialized JSON objects, one
   # line per object.
